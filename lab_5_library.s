@@ -1,15 +1,10 @@
 	.data
 
 	.global prompt
-	.global mydata
+	;.global mydata
 	.global buttonScore
 	.global spaceScore
-
-mydata2:	.byte	0x20	; This is where you can store data.
-			; The .byte assembler directive stores a byte
-			; (initialized to 0x20) at the label mydata.
-			; Halfwords & Words can be stored using the
-			; directives .half & .word
+	.global roundState
 
 ;SCORES
 buttonScore: .byte 0 ;address to keep track of button Score
@@ -30,11 +25,11 @@ spaceScore: .byte 0 ;address to keep track of space Score
 	.global lab5
 
 ptr_to_prompt:		.word prompt
-ptr_to_mydata:		.word mydata
-ptr_to_mydata2:		.word mydata2
+;ptr_to_mydata:		.word mydata
 
 ptr_to_buttonScore: .word buttonScore
 ptr_to_spaceScore: .word spaceScore
+ptr_to_roundState: 	.word roundState
 
 uart_interrupt_init:
 
@@ -161,27 +156,23 @@ UART0_Handler:
 	STRB r5, [r4, #0x044]
 
 	;if prompt was presented, then this handler gets point, if not no point
-	LDR r6, ptr_to_mydata
-	LDRB r5, [r6]
-	ADD r5, r5, #1
-	STRB r5, [r6]
-	; Is r6 == 1
-	CMP r5, #1
-	BNE UART_END
+	;Check if round started
+	LDR r5, ptr_to_roundState
+	LDRB r6, [r5]
+	CMP r6, #1
+	BNE UART_END ;if not 1 round did not start, end handler
 
-	;read from character
+	;Check if space was pressed first, before giving point
 	BL simple_read_character
-	;Is r0 == ' '
-	CMP r0, #0x32 ; ASCII for Space
-	BNE UART_END		; if space not pressed, go end round over
-	;Space pressed
-	;LDRB r6, .mydata
-	;ADD r6, r6, #1 ;Increment Data
+	CMP r0, #0x32; ASCII for Space
+	BNE UART_END ; if not space, go end round
 
-	LDRB r7, [r6] ; get the # of points in the data
-	ADD r7, r7, #1 ; Increment the # of points
 
-	STRB r7, [r6] ; store back # of points in data
+	;Handle giving point
+	LDR r7, ptr_to_spaceScore
+	LDRB r8, [r6]
+	ADD r8, r8, #1
+	STRB r8, [r7]
 
 
 UART_END:
