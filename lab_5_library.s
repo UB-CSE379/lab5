@@ -25,6 +25,7 @@ spaceScore: .byte 0 ;address to keep track of space Score
 	.global lab5
 	.global print_all_numbers
 	.global read_character
+	.global string2int
 
 ;ptr_to_prompt:		.word prompt
 ;ptr_to_mydata:		.word mydata
@@ -141,16 +142,16 @@ UART0_Handler:
 
 	;Check if enter pressed
 	BL simple_read_character
-	CMP r0, #0xA ;ASCII for ENTER
-	BEQ UART_ENTER;
+	LDRB r1,[r0]
+	;CMP r1, #13 ;ASCII for ENTER
+	;BEQ UART_ENTER;
 
 	;Check if q was pressed to end program
-	CMP r0, #0x81 ; ASCII for q
-	BEQ UART_END
+	;CMP r1, #0x81 ; ASCII for q
+	;BEQ UART_END
 
 	;Check if space was pressed first, before letting Handler move
-	BL simple_read_character
-	CMP r0, #0x32; ASCII for Space
+	CMP r1, #0x32; ASCII for Space
 	BNE UART_END ; if not space, exit
 
 	LDRB r5, [r4, #0x044] ;UARTICR Offset
@@ -172,12 +173,6 @@ UART0_Handler:
 	STRB r8, [r7]
 	B UART_END
 
-UART_ENTER:
-	ldr r0, ptr_to_roundstate
-    ldrb r1,[r0]
-    ADD r1,r1, #1
-    STRB r1, [r0]
-    B UART_END
 
 UART_END:
 
@@ -205,7 +200,7 @@ Switch_Handler:
 	STRB r5, [r4, #0x41C]
 
 	;if prompt was presented, then this handler gets point, if not no point
-	;Check if round started
+	;Check if prompt appeared
 	LDR r5, ptr_to_roundstate
 	LDRB r6, [r5]
 	CMP r6, #1
