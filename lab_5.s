@@ -43,9 +43,6 @@ lab5:								; This is your main routine which is called from
  	bl uart_init
 	bl uart_interrupt_init
 	bl gpio_interrupt_init
-	NOP
-	NOP
-	NOP
 
 
 LOOP5:
