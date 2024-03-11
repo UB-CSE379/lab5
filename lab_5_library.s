@@ -31,7 +31,7 @@ spaceScore: .byte 0 ;address to keep track of space Score
 
 ptr_to_buttonScore: .word buttonScore
 ptr_to_spaceScore: .word spaceScore
-ptr_to_roundState: 	.word roundState
+ptr_to_roundstate: 	.word roundState
 
 U0FR: 	.equ 0x18	; UART0 Flag Register
 
@@ -160,7 +160,7 @@ UART0_Handler:
 
 	;if prompt was presented, then this handler gets point, if not no point
 	;Check if round started
-	LDR r5, ptr_to_roundState
+	LDR r5, ptr_to_roundstate
 	LDRB r6, [r5]
 	CMP r6, #1
 	BNE UART_END ;if not 1 round did not start, end handler
@@ -206,7 +206,7 @@ Switch_Handler:
 
 	;if prompt was presented, then this handler gets point, if not no point
 	;Check if round started
-	LDR r5, ptr_to_roundState
+	LDR r5, ptr_to_roundstate
 	LDRB r6, [r5]
 	CMP r6, #1
 	BNE SWITCH_END ;if not 1 round did not start, end handler
