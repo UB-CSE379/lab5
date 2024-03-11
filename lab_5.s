@@ -89,10 +89,21 @@ TIMERLOOP:
     CMP r8, #0
     BGT DECREMENT
 
-    ldr r0, ptr_to_roundstate
-    ldrb r1,[r0]
-    ADD r1,r1, #1
-    STRB r1, [r0]
+;Check if enter was pressed, goes to handler when anything on keyboard is pressed
+; Handler will increment roundstate
+
+CHECK_ROUND:
+	LDR r0, ptr_to_roundstate
+	LDRB r1, [r0]
+	CMP r1, #1
+	BNE CHECK_ROUND
+
+;if it is 1 in roundstate, that means enter was pressed, we continue
+
+    ;ldr r0, ptr_to_roundstate
+    ;ldrb r1,[r0]
+    ;ADD r1,r1, #1
+    ;STRB r1, [r0]
 
 	MOV r0, #0xD	;Newline
     BL output_character
