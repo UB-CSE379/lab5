@@ -2,13 +2,18 @@
 
 	.global prompt
 	.global mydata
+	.global buttonScore
+	.global spaceScore
 
-prompt:	.string "Your prompt with instructions is place here", 0
-mydata:	.byte	0x20	; This is where you can store data.
+mydata2:	.byte	0x20	; This is where you can store data.
 			; The .byte assembler directive stores a byte
 			; (initialized to 0x20) at the label mydata.
 			; Halfwords & Words can be stored using the
 			; directives .half & .word
+
+;SCORES
+buttonScore: .byte 0 ;address to keep track of button Score
+spaceScore: .byte 0 ;address to keep track of space Score
 
 	.text
 
@@ -26,6 +31,10 @@ mydata:	.byte	0x20	; This is where you can store data.
 
 ptr_to_prompt:		.word prompt
 ptr_to_mydata:		.word mydata
+ptr_to_mydata2:		.word mydata2
+
+ptr_to_buttonScore: .word buttonScore
+ptr_to_spaceScore: .word spaceScore
 
 uart_interrupt_init:
 
@@ -152,9 +161,12 @@ UART0_Handler:
 	STRB r5, [r4, #0x044]
 
 	;if prompt was presented, then this handler gets point, if not no point
-	LDRB r6, .mydata
+	LDR r6, ptr_to_mydata
+	LDRB r5, [r6]
+	ADD r5, r5, #1
+	STRB r5, [r6]
 	; Is r6 == 1
-	CMP r6, #1
+	CMP r5, #1
 	BNE UART_END
 
 	;read from character
@@ -163,8 +175,8 @@ UART0_Handler:
 	CMP r0, #0x32 ; ASCII for Space
 	BNE UART_END		; if space not pressed, go end round over
 	;Space pressed
-	LDRB r6, .mydata
-	ADD r6, r6, #1 ;Increment Data
+	;LDRB r6, .mydata
+	;ADD r6, r6, #1 ;Increment Data
 
 	LDRB r7, [r6] ; get the # of points in the data
 	ADD r7, r7, #1 ; Increment the # of points
@@ -187,34 +199,34 @@ Switch_Handler:
 	; Remember to preserver registers r4-r11 by pushing then popping
 	; them to & from the stack at the beginning & end of the handler
 	PUSH {r4 - r12, lr}
-	
+
 	; Clear Interrupt
 	MOV r4, #0x5000
 	MOVT r4, #0x4002
-	
+
 	;GPIOICR Offset
 	LDRB r5, [r4, #0x41C]
 	ORR r5, r5, #0x10 ; 0001 0000
 	STRB r5, [r4, #0x41C]
-	
+
 	;check if round started
-	LDRB r6, .mydata
-	CMP r6, #1
-	BNE SWITCH_END
-	
-	ADD r6, r6, #2 ;Increment Data for Switch
-	
+	;LDRB r6, .mydata
+	;CMP r6, #1
+	;BNE SWITCH_END
 
-	LDRB r7, [r6] ; get the # of points in the data
-	ADD r7, r7, #1 ; Increment the # of points
+	;ADD r6, r6, #2 ;Increment Data for Switch
 
-	STRB r7, [r6] ; store back # of points in data
-	
-	
-	
+
+	;LDRB r7, [r6] ; get the # of points in the data
+	;ADD r7, r7, #1 ; Increment the # of points
+
+	;STRB r7, [r6] ; store back # of points in data
+
+
+
 SWITCH_END:
 
-	
+
 	POP {r4 - r12, lr}
 
 	BX lr       	; Return
