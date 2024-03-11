@@ -133,7 +133,7 @@ UART0_Handler:
 	; Your code for your UART handler goes here.
 	; Remember to preserver registers r4-r11 by pushing then popping
 	; them to & from the stack at the beginning & end of the handler
-	PUSH {r4-r12, lr}
+	PUSH {r4-r11}
 
 
 	; Clear Interrupt
@@ -178,7 +178,7 @@ UART_END:
 
 
 
-	POP {r4-r12, lr}
+	POP {r4-r11}
 
 	BX lr       	; Return
 
@@ -188,7 +188,7 @@ Switch_Handler:
 	; Your code for your Switch handler goes here.
 	; Remember to preserver registers r4-r11 by pushing then popping
 	; them to & from the stack at the beginning & end of the handler
-	PUSH {r4 - r12, lr}
+	PUSH {r4 - r11}
 
 	; Clear Interrupt
 	MOV r4, #0x5000
@@ -217,7 +217,7 @@ Switch_Handler:
 SWITCH_END:
 
 
-	POP {r4 - r12, lr}
+	POP {r4 - r11}
 
 	BX lr       	; Return
 
@@ -242,9 +242,9 @@ simple_read_character:
 	MOV r4, #0xC000
 	MOVT r4, #0x4000
 
-	LDRB r5, [r4, #0x18]
+	;LDRB r0, [r4]
 
-	LDRB r0, [r5] ;r0 has the character
+	LDRB r0, [r4] ;r0 has the character
 
 	POP {r4 - r12, lr}
 
