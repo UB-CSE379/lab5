@@ -142,11 +142,12 @@ UART0_Handler:
 	;Check if enter pressed
 	BL simple_read_character
 	CMP r0, #0xA ;ASCII for ENTER
-	BEQ UART_END;
+	BEQ UART_ENTER;
 
 	;Check if q was pressed to end program
-	CMP r0, #81 ; ASCII for q
+	CMP r0, #0x81 ; ASCII for q
 	BEQ UART_END
+
 	;Check if space was pressed first, before letting Handler move
 	BL simple_read_character
 	CMP r0, #0x32; ASCII for Space
@@ -169,7 +170,14 @@ UART0_Handler:
 	LDRB r8, [r7]
 	ADD r8, r8, #1
 	STRB r8, [r7]
+	B UART_END
 
+UART_ENTER:
+	ldr r0, ptr_to_roundstate
+    ldrb r1,[r0]
+    ADD r1,r1, #1
+    STRB r1, [r0]
+    B UART_END
 
 UART_END:
 
