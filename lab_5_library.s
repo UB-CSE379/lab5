@@ -5,10 +5,12 @@
 	.global buttonScore
 	.global spaceScore
 	.global roundState
+	.global disqualifyflag
 
 ;SCORES
-buttonScore: .byte 0 ;address to keep track of button Score
-spaceScore: .byte 0 ;address to keep track of space Score
+buttonScore: 	.byte 0 ;address to keep track of button Score
+spaceScore:	 	.byte 0 ;address to keep track of space Score
+disqualifyflag:	.byte 0 ;address to keep track of space Score
 
 	.text
 
@@ -33,6 +35,7 @@ spaceScore: .byte 0 ;address to keep track of space Score
 ptr_to_buttonScore: .word buttonScore
 ptr_to_spaceScore: .word spaceScore
 ptr_to_roundstate: 	.word roundState
+ptr_to_flag:		.word disqualifyflag
 
 U0FR: 	.equ 0x18	; UART0 Flag Register
 
@@ -141,8 +144,12 @@ UART0_Handler:
 	MOVT r4, #0x4000 ; UART0 Base Address
 
 	;Check if enter pressed
-	BL simple_read_character
-	LDRB r1,[r0]
+
+	LDRB r1, [r4]
+
+	;LDRB r0, [r4] ;r0 has the character
+
+	;LDRB r1,[r0]
 	;CMP r1, #13 ;ASCII for ENTER
 	;BEQ UART_ENTER;
 
@@ -150,7 +157,7 @@ UART0_Handler:
 	;CMP r1, #0x81 ; ASCII for q
 	;BEQ UART_END
 
-	;Check if space was pressed first, before letting Handler move
+	;Check if space was pressed, before letting Handler move
 	CMP r1, #0x32; ASCII for Space
 	BNE UART_END ; if not space, exit
 
@@ -164,7 +171,7 @@ UART0_Handler:
 	LDR r5, ptr_to_roundstate
 	LDRB r6, [r5]
 	CMP r6, #1
-	BNE UART_END ;if not 1 round did not start, end handler
+	BNE DISQ ;if not 1 round did not start, end handler
 
 	;Handle giving point
 	LDR r7, ptr_to_spaceScore
@@ -173,10 +180,14 @@ UART0_Handler:
 	STRB r8, [r7]
 	B UART_END
 
+DISQ:
+	LDR r7, ptr_to_flag
+	LDRB r8, [r7]
+	B UART_END
+
+
 
 UART_END:
-
-
 
 	POP {r4-r11}
 
@@ -645,260 +656,5 @@ move_res:
 	mov pc, lr
 
 ;_________________________________________________________________________________________________________________________________________________
-
-
-read_from_push_btns:
-	PUSH {r4-r12,lr}	; Spill registers to stack
-
-          ; Your code is placed here
-    ;Initilize r3 with PORT D Base Address
-    MOV r3, #0x7000
-    MOVT r3, #0x4000
-
-LOOP20:
- 	;GPIODATA
- 	LDRB r9, [r3, #0x3FC]
- 	AND r9, r9, #0x0F ; if r9 == 0000 0001 SW5 is pressed
- 					  ; if r9 == 0000 0010 SW4 is pressed
- 					  ; if r9 == 0000 0100 SW3 is pressed
- 					  ; if r9 == 0000 1000 SW2 is pressed
-
- 	;Find which button was pressed
- 	CMP r9, #0x01 ; SW5 is pressed
- 	BEQ PRESS_5
-
- 	CMP r9, #0x02; SW4 is pressed
- 	BEQ PRESS_4
-
- 	CMP r9, #0x04; SW3 is pressed
- 	BEQ PRESS_3
-
- 	CMP r9, #0x08; SW2 is pressed
- 	BEQ PRESS_2
-
- 	;MOV r0, #0 ; Nothing is pressed
- 	B LOOP20
-
-PRESS_5:
-	MOV r0, #5
-	B STOP_BTNS
-PRESS_4:
-	MOV r0, #4
-	B STOP_BTNS
-PRESS_3:
-	MOV r0, #3
-	B STOP_BTNS
-PRESS_2:
-	MOV r0, #2
-	B STOP_BTNS
-
-STOP_BTNS:
-	POP {r4-r12,lr}  	; Restore registers from stack
-	MOV pc, lr
-
-;_________________________________________________________________________________________________________________________________________________
-
-
-illuminate_LEDs:
-	PUSH {r4-r12,lr}	; Spill registers to stack
-
-          ; Your code is placed here
-    ;Get LEDS
-    ;MOV r0, #0 ;First LED
-    ;MOV r0, #1 ; Second LED
-    ;MOV r0, #2 ; Third LED
-    ;MOV r0, #3; 4th LED
-    ;MOV r0, #5 ; ALL LEDS
-
-	; Get Port B Base Address
-	MOV r6, #0x5000
-	MOVT r6, #0x4000
-
-	LDRB r1, [r6, #0x3FC]
-    CMP r0, #0
-    BEQ LED0
-
-    CMP r0, #1
-    BEQ LED1
-
-    CMP r0, #2
-    BEQ LED2
-
-    CMP r0, #3
-    BEQ LED3
-
-    CMP r0, #4
-    BEQ LEDALL
-LED0:
-	ORR r1, r1, #0x01
-	STRB r1, [r6, #0x3FC]
-	B LED_STOP
-
-LED1:
-	ORR r1, r1, #0x02
-	STRB r1, [r6, #0x3FC]
-	B LED_STOP
-
-LED2:
-	ORR r1, r1, #0x04
-	STRB r1, [r6, #0x3FC]
-	B LED_STOP
-
-LED3:
-	ORR r1, r1, #0x08
-	STRB r1, [r6, #0x3FC]
-	B LED_STOP
-LEDALL:
-	ORR r1, r1, #0x0F
-	STRB r1, [r6, #0x3FC]
-	B LED_STOP
-LED_STOP:
-
-	POP {r4-r12,lr}  	; Restore registers from stack
-	MOV pc, lr
-
-;_________________________________________________________________________________________________________________________________________________
-
-
-illuminate_RGB_LED:
-
-	PUSH {r4-r12,lr}	; Spill registers to stack
-
-          ; Your code is placed here
-    ;Initialize Clock Address
-    ; Color is passed in from r0
-    ;MOV r0, #1 	;RED
-    ;MOV r0, #2 ;BLUE
-    ;MOV r0, #3 ;GREEN
-    ;MOV r0, #4 ;PURPLE -> RED AND BLUE
-    ;MOV r0, #5 ;YELLOW -> RED AND GREEN
-    ;MOV r0, #6 ;WHITE -> RED, BLUE, AND GREEN
-
-    MOV r3, #0x5000
-    MOVT r3, #0x4002
-
-    LDRB r9, [r3, #0x3FC] ; GPIODATA
-
-	CMP r0, #1
-	BEQ RED
-
- 	CMP r0, #2
-  	BEQ BLUE
-
-   	CMP r0, #3
-	BEQ GREEN
-
-	CMP r0, #4
-	BEQ PURPLE
-
-	CMP r0, #5
-	BEQ YELLOW
-
-	CMP r0, #6
-	BEQ WHITE
-
-
-    ; RED , turn on pin 1, turn off pin 2 and 3
-RED:
-    ORR r9, r9, #0x02     ; need to turn pin 1 on that is 0000 0010
-    STRB r9, [r3, #0x3FC]		; Turn on 0000 0010
-	B COLOR_STOP
-
-    ; BLUE, turn on pin 2, turn off pin 1 and 3 so 0000 0100
-BLUE:
-	ORR r9, r9, #0x04
-	STRB r9, [r3, #0x3FC]
-	B COLOR_STOP
-
-    ; GREEN, turn on pin 3, turn off pin 1 and 2 so 0000 1000
-GREEN:
-	ORR r9, r9, #0x08
-	STRB r9, [r3, #0x3FC]
-	B COLOR_STOP
-
-    ; PURPLE = red + blue, pins 1 and 2 on, 3 off -> 0000 0110
-PURPLE:
-	ORR r9, r9, #06
-	STRB r9, [r3, #0x3FC]
-	B COLOR_STOP
-
-    ; YELLOW = red + green, pins 1 and 3, 2 off -> 0000 1010
-YELLOW:
-	ORR r9, r9, #0x0A
-	STRB r9, [r3, #0x3FC]
-	B COLOR_STOP
-
-    ; WHITE = red + blue + green, pins 1-3 on -> 0000 1110
-WHITE:
-	ORR r9, r9, #0x0E
-	STRB r9, [r3, #0x3FC]
-	B COLOR_STOP
-
-COLOR_STOP:
-
-	POP {r4-r12,lr}  	; Restore registers from stack
-	MOV pc, lr
-
-;_________________________________________________________________________________________________________________________________________________
-
-
-read_tiva_push_button:
-	PUSH {r4-r12,lr}	; Spill registers to stack
-
-          ; Your code is placed here
-
-    ;Initialize r3 with Port F address
-    MOV r3, #0x5000
-    MOVT r3, #0x4002
-LOOP30:
-    LDRB r9, [r3, #0x3FC] ;GPIODATA
-    AND r9, r9, #0x10	;
-
-    CMP r9, #0x10 ; check if pin is being pressed
-    BEQ LOOP30
-    BNE PRESS ; if r9 == 0, r0 = 1
-    MOV r0, #0 ; if r9 == 1, r0 = 0
-
-	B STOP
-
-PRESS:
-	MOV r0, #1; button is being pressed
-
-
-STOP:
-
-
-	POP {r4-r12,lr}  	; Restore registers from stack
-	MOV pc, lr
-
-;_________________________________________________________________________________________________________________________________________________
-
-div_and_mod:
-	PUSH {r4-r12, lr}    ; Save registers
-
-    CMP r1, #0            ; Check for zero or negative divisor
-    BLE zeros_or_invalid  ; If divisor <= 0, go to error handling or zero initialization
-
-    ; Direct division to calculate quotient
-    UDIV r2, r0, r1       ; r2 = r0 / r1, quotient
-
-    ; Calculate remainder
-    MUL r3, r2, r1        ; r3 = r2 * r1
-    SUB r3, r0, r3        ; r3 = r0 - r3, remainder
-
-    ; Move the quotient to r0 and remainder to r1
-    MOV r0, r2            ; Quotient
-    MOV r1, r3            ; Remainder
-
-    B cleanup             ; Go to cleanup
-
-zeros_or_invalid:
-    MOV r0, #0            ; Set quotient to zero
-    MOV r1, #0            ; Set remainder to zero
-
-cleanup:
-	POP {r4-r12,lr}  	; Restore registers from stack
-	MOV pc, lr
-
 
 	.end
