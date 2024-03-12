@@ -70,8 +70,6 @@ lab5:								; This is your main routine which is called from
 	bl uart_interrupt_init ;initializations
 	bl gpio_interrupt_init
 
-
-
 	ldr r0, ptr_to_prompt1
 	BL output_string			; displaying intial prompt
 
@@ -86,10 +84,21 @@ ANOTHA:
 
 WAITING1: ;some issue in this loop
 
+	MOV r4, #0xC000
+	MOVT r4, #0x4000 ; UART0 Base Address
 
-	ldr r0, ptr_to_data1
-	BL simple_read_character
+	;Check if enter pressed
 
+	LDRB r0, [r4]
+
+	MOV r6,r0
+
+	;LDR r0, ptr_to_data1
+
+	;MOV r6, #13 ; test so u can step thru
+
+    CMP r6, #13
+    BNE WAITING1
 
 	MOV r0, #0xD	;Newline
     BL output_character
@@ -97,19 +106,8 @@ WAITING1: ;some issue in this loop
     BL output_character
 
 
-	LDR r0, ptr_to_data1
-	BL string2int
-    CMP r0, #13
-    BNE WAITING1
 
-	MOV r8, #10 ;counter
-TIMERLOOP:
-
-    CMP r8, #0
-    BGT DECREMENT
-
-
-    ldr r0, ptr_to_roundstate
+	ldr r0, ptr_to_roundstate
     ldrb r1,[r0]
     ADD r1,r1, #1
     STRB r1, [r0]
@@ -117,19 +115,30 @@ TIMERLOOP:
     ldr r0, ptr_to_button
     BL output_string
 
+	MOV r7, #0
+	MOV r8, #0x5555
+   	MOVT r8, #0x00FF ;counter
+
+
+TIMERLOOP:
+	ADD r7, r7, #1
+    CMP r7, r8
+    BLT TIMERLOOP
+
+
 
 	MOV r0, #0xD	;Newline
     BL output_character
     MOV r0, #0xA
     BL output_character
 
-    MOV r0, #12
+    MOV r0, #0x0C
     BL output_string ;Clear da screen man
 
-    LDR r0, ptr_to_spacep
+    LDR r0, ptr_to_spacep	;points for user1
     BL output_string
 
-    LDR r0, ptr_to_spacescore
+    LDR r0, ptr_to_spacescore	;points for user2
     BL output_string
 
 
@@ -151,6 +160,7 @@ TIMERLOOP:
     BEQ SPACEWON
     CMP r1, #3
     BEQ BUTTONWON
+
     BNE ANOTHA
 
 
@@ -167,11 +177,6 @@ BUTTONWON:
 	B END
 
 
-
-
-DECREMENT:
-	SUB r8,r8, #1
-	B TIMERLOOP
 
 
 	; This is where you should implement a loop, waiting for the user to
